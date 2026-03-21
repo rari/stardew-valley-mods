@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Use workspace game folder (has SMAPI). Omit to use auto-detected Steam path. -->
+    <GamePath Condition="'$(GamePath)' == ''">$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)\..\..\..\Stardew Valley'))</GamePath>
+    <EnableModDeploy>false</EnableModDeploy>
+    <Version>1.0.0</Version>
+    <TargetFramework>net6.0</TargetFramework>
+    <EnableHarmony>true</EnableHarmony>
+    <RootNamespace>BiggerOnTheInsideSMAPI</RootNamespace>
+    <AssemblyName>BiggerOnTheInsideSMAPI</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Pathoschild.Stardew.ModBuildConfig" Version="4.1.1" />
+  </ItemGroup>
+
+  <!-- Export to [SMAPI] folder alongside the CP pack for distribution -->
+  <Target Name="ExportToSmapiFolder" AfterTargets="Build">
+    <PropertyGroup>
+      <SmapiExportDir>$(MSBuildProjectDirectory)\..\Bigger On The Inside\[SMAPI] Bigger On The Inside</SmapiExportDir>
+    </PropertyGroup>
+    <MakeDir Directories="$(SmapiExportDir)" />
+    <Copy SourceFiles="$(OutputPath)BiggerOnTheInsideSMAPI.dll" DestinationFolder="$(SmapiExportDir)" />
+    <Copy SourceFiles="$(MSBuildProjectDirectory)\manifest.json" DestinationFolder="$(SmapiExportDir)" />
+  </Target>
+
+</Project>
