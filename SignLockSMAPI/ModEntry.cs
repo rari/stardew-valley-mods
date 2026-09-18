@@ -43,7 +43,9 @@ public class ModEntry : Mod
     {
         if (!Context.IsWorldReady || Config.BypassKey.IsDown())
             return;
-        if (!e.Button.IsActionButton())
+        if (!e.Button.IsActionButton() && !e.Button.IsUseToolButton())
+            return;
+        if (e.Button.IsUseToolButton() && Game1.player.CurrentTool != null)
             return;
 
         GameLocation location = Game1.currentLocation;
@@ -51,7 +53,7 @@ public class ModEntry : Mod
             return;
 
         Vector2 tile;
-        if (e.Button == SButton.MouseRight)
+        if (e.Button == SButton.MouseRight || e.Button == SButton.MouseLeft)
             tile = e.Cursor.GrabTile;
         else
             tile = new Vector2(

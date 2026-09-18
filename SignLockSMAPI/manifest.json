@@ -2,11 +2,11 @@
   "Name": "Sign Lock",
   "Author": "JennaJuffuffles",
   "Version": "1.0.0",
-  "Description": "Never accidentally update a sign ever again!",
+  "Description": "Add a safety lock to your signs. Never accidentally update a sign again!",
   "UniqueID": "JennaJuffuffles.SignLock",
   "EntryDll": "SignLockSMAPI.dll",
   "MinimumApiVersion": "4.0.0",
-  "UpdateKeys": [],
+  "UpdateKeys": [ "Nexus:51515" ],
   "Dependencies": [
     {
       "UniqueID": "spacechase0.GenericModConfigMenu",
