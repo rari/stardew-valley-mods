@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <GamePath Condition="'$(GamePath)' == ''">$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)\..\..\..\Stardew Valley'))</GamePath>
+    <EnableModDeploy>false</EnableModDeploy>
+    <Version>1.0.0</Version>
+    <TargetFramework>net6.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <RootNamespace>SignLockSMAPI</RootNamespace>
+    <AssemblyName>SignLockSMAPI</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Pathoschild.Stardew.ModBuildConfig" Version="4.1.1" />
+  </ItemGroup>
+
+  <Target Name="ExportToSmapiFolder" AfterTargets="Build">
+    <PropertyGroup>
+      <SmapiExportDir>$(MSBuildProjectDirectory)\..\Sign Lock\[SMAPI] Sign Lock</SmapiExportDir>
+    </PropertyGroup>
+    <MakeDir Directories="$(SmapiExportDir)" />
+    <MakeDir Directories="$(SmapiExportDir)\i18n" />
+    <Copy SourceFiles="$(OutputPath)SignLockSMAPI.dll" DestinationFolder="$(SmapiExportDir)" />
+    <Copy SourceFiles="$(MSBuildProjectDirectory)\manifest.json" DestinationFolder="$(SmapiExportDir)" />
+    <Copy SourceFiles="$(MSBuildProjectDirectory)\i18n\default.json" DestinationFolder="$(SmapiExportDir)\i18n" />
+  </Target>
+
+</Project>

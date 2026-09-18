@@ -1,0 +1,16 @@
+{
+  "Name": "Sign Lock",
+  "Author": "JennaJuffuffles",
+  "Version": "1.0.0",
+  "Description": "Never accidentally update a sign ever again!",
+  "UniqueID": "JennaJuffuffles.SignLock",
+  "EntryDll": "SignLockSMAPI.dll",
+  "MinimumApiVersion": "4.0.0",
+  "UpdateKeys": [],
+  "Dependencies": [
+    {
+      "UniqueID": "spacechase0.GenericModConfigMenu",
+      "IsRequired": false
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+{
+  "config.BypassKey.name": "Bypass Key",
+  "config.BypassKey.description": "Hold to temporarily allow sign update."
+}
