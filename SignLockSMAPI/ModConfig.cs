@@ -5,5 +5,5 @@ namespace SignLockSMAPI;
 
 public class ModConfig
 {
-    public KeybindList BypassKey { get; set; } = new KeybindList(SButton.LeftShift);
+    public KeybindList BypassKey { get; set; } = KeybindList.Parse("LeftControl");
 }

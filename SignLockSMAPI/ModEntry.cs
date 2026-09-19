@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
@@ -15,7 +16,9 @@ public class ModEntry : Mod
         Config = helper.ReadConfig<ModConfig>();
 
         helper.Events.GameLoop.GameLaunched += OnGameLaunched;
+        helper.Events.GameLoop.UpdateTicked += OnUpdateTicked;
         helper.Events.Input.ButtonPressed += OnButtonPressed;
+        helper.Events.Input.CursorMoved += OnCursorMoved;
     }
 
     private void OnGameLaunched(object? sender, GameLaunchedEventArgs e)
@@ -41,32 +44,102 @@ public class ModEntry : Mod
 
     private void OnButtonPressed(object? sender, ButtonPressedEventArgs e)
     {
-        if (!Context.IsWorldReady || Config.BypassKey.IsDown())
+        if (!ShouldHandleButton(e.Button))
             return;
-        if (!e.Button.IsActionButton() && !e.Button.IsUseToolButton())
-            return;
-        if (e.Button.IsUseToolButton() && Game1.player.CurrentTool != null)
-            return;
-
-        GameLocation location = Game1.currentLocation;
-        if (location == null)
-            return;
-
-        Vector2 tile;
-        if (e.Button == SButton.MouseRight || e.Button == SButton.MouseLeft)
-            tile = e.Cursor.GrabTile;
-        else
-            tile = new Vector2(
-                (int)(Game1.player.GetToolLocation().X / Game1.tileSize),
-                (int)(Game1.player.GetToolLocation().Y / Game1.tileSize)
-            );
-
-        if (!location.objects.TryGetValue(tile, out var obj))
-            location.objects.TryGetValue(tile + new Vector2(0, 1), out obj);
-
-        if (obj is not Sign sign || sign.displayItem.Value == null)
+        if (!IsLockedSignUnderCursor(e.Cursor))
             return;
 
         Helper.Input.Suppress(e.Button);
+    }
+
+    // keyboard
+    private void OnCursorMoved(object? sender, CursorMovedEventArgs e)
+    {
+        SuppressHeldButtonsOverLockedSign(e.NewPosition);
+    }
+
+    // controller
+    private void OnUpdateTicked(object? sender, UpdateTickedEventArgs e)
+    {
+        SuppressHeldButtonsOverLockedSign(Helper.Input.GetCursorPosition());
+    }
+
+    private void SuppressHeldButtonsOverLockedSign(ICursorPosition cursor)
+    {
+        if (!Context.IsPlayerFree || Config.BypassKey.IsDown())
+            return;
+        if (!IsLockedSignUnderCursor(cursor))
+            return;
+
+        foreach (SButton button in GetHeldInteractionButtons())
+        {
+            if (!ShouldHandleButton(button))
+                continue;
+
+            Helper.Input.Suppress(button);
+        }
+    }
+
+    private bool ShouldHandleButton(SButton button)
+    {
+        if (!Context.IsPlayerFree || Config.BypassKey.IsDown())
+            return false;
+        if (!button.IsActionButton() && !button.IsUseToolButton())
+            return false;
+        if (button.IsUseToolButton() && Game1.player.CurrentTool != null)
+            return false;
+        return true;
+    }
+
+    private static bool IsLockedSignUnderCursor(ICursorPosition cursor)
+    {
+        GameLocation location = Game1.currentLocation;
+        if (location == null)
+            return false;
+
+        Vector2 down = new(0, 1);
+        Vector2 grab = cursor.GrabTile;
+        Vector2 tool = new(
+            (int)(Game1.player.GetToolLocation().X / Game1.tileSize),
+            (int)(Game1.player.GetToolLocation().Y / Game1.tileSize)
+        );
+        Vector2 playerGrab = Game1.player.GetGrabTile();
+
+        foreach (Vector2 tile in new[] { grab, grab + down, tool, tool + down, playerGrab, playerGrab + down })
+        {
+            if (!location.objects.TryGetValue(tile, out var obj))
+                continue;
+            if (obj is Sign sign && sign.displayItem.Value != null)
+                return true;
+        }
+
+        return false;
+    }
+
+    private IEnumerable<SButton> GetHeldInteractionButtons()
+    {
+        // keyboard
+        if (Helper.Input.IsDown(SButton.MouseLeft) || Helper.Input.IsSuppressed(SButton.MouseLeft))
+            yield return SButton.MouseLeft;
+        if (Helper.Input.IsDown(SButton.MouseRight) || Helper.Input.IsSuppressed(SButton.MouseRight))
+            yield return SButton.MouseRight;
+        // controller
+        if (Helper.Input.IsDown(SButton.ControllerA) || Helper.Input.IsSuppressed(SButton.ControllerA))
+            yield return SButton.ControllerA;
+        if (Helper.Input.IsDown(SButton.ControllerX) || Helper.Input.IsSuppressed(SButton.ControllerX))
+            yield return SButton.ControllerX;
+
+        foreach (var input in Game1.options.actionButton)
+        {
+            SButton button = input.ToSButton();
+            if (Helper.Input.IsDown(button) || Helper.Input.IsSuppressed(button))
+                yield return button;
+        }
+        foreach (var input in Game1.options.useToolButton)
+        {
+            SButton button = input.ToSButton();
+            if (Helper.Input.IsDown(button) || Helper.Input.IsSuppressed(button))
+                yield return button;
+        }
     }
 }

@@ -1,7 +1,7 @@
 {
   "Name": "Sign Lock",
   "Author": "JennaJuffuffles",
-  "Version": "1.0.0",
+  "Version": "0.0.1",
   "Description": "Add a safety lock to your signs. Never accidentally update a sign again!",
   "UniqueID": "JennaJuffuffles.SignLock",
   "EntryDll": "SignLockSMAPI.dll",
