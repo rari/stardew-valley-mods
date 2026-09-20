@@ -3,11 +3,12 @@ using Microsoft.Xna.Framework;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley;
+using StardewValley.Menus;
 using StardewValley.Objects;
 
 namespace SignLockSMAPI;
 
-public class ModEntry : Mod
+internal sealed class ModEntry : Mod
 {
     internal static ModConfig Config = new();
 
@@ -44,15 +45,15 @@ public class ModEntry : Mod
 
     private void OnButtonPressed(object? sender, ButtonPressedEventArgs e)
     {
-        if (!ShouldHandleButton(e.Button))
+        if (!ShouldHandleButton(e.Button, e.Cursor))
             return;
-        if (!IsLockedSignUnderCursor(e.Cursor))
+        if (!IsLockedSignUnderCursor(e.Button, e.Cursor))
             return;
 
         Helper.Input.Suppress(e.Button);
     }
 
-    // keyboard
+    // mouse
     private void OnCursorMoved(object? sender, CursorMovedEventArgs e)
     {
         SuppressHeldButtonsOverLockedSign(e.NewPosition);
@@ -80,15 +81,37 @@ public class ModEntry : Mod
         }
     }
 
-    private bool ShouldHandleButton(SButton button)
+    private bool ShouldHandleButton(SButton button, ICursorPosition? cursor = null)
     {
-        if (!Context.IsPlayerFree || Config.BypassKey.IsDown())
+        if (Config.BypassKey.IsDown())
             return false;
         if (!button.IsActionButton() && !button.IsUseToolButton())
             return false;
-        if (button.IsUseToolButton() && Game1.player.CurrentTool != null)
+        if (button.IsUseToolButton() && Game1.player?.CurrentTool != null)
+            return false;
+        if (cursor != null && IsLockedSignUnderCursor(button, cursor))
+            return true;
+        if (!Context.IsPlayerFree)
+            return false;
+        if (IsCursorOverHud())
             return false;
         return true;
+    }
+
+    private static bool IsCursorOverHud()
+    {
+        if (Game1.activeClickableMenu != null)
+            return true;
+
+        int x = Game1.getMouseX();
+        int y = Game1.getMouseY();
+        foreach (IClickableMenu menu in Game1.onScreenMenus)
+        {
+            if (menu.isWithinBounds(x, y))
+                return true;
+        }
+
+        return false;
     }
 
     private static bool IsLockedSignUnderCursor(ICursorPosition cursor)
@@ -97,28 +120,84 @@ public class ModEntry : Mod
         if (location == null)
             return false;
 
-        Vector2 down = new(0, 1);
-        Vector2 grab = cursor.GrabTile;
-        Vector2 tool = new(
-            (int)(Game1.player.GetToolLocation().X / Game1.tileSize),
-            (int)(Game1.player.GetToolLocation().Y / Game1.tileSize)
-        );
-        Vector2 playerGrab = Game1.player.GetGrabTile();
+        if (IsLockedSignTargetAt(location, cursor.GrabTile))
+            return true;
 
-        foreach (Vector2 tile in new[] { grab, grab + down, tool, tool + down, playerGrab, playerGrab + down })
+        return IsLockedSignTargetAt(location, GetToolTile(cursor));
+    }
+
+    private static bool IsLockedSignUnderCursor(SButton button, ICursorPosition cursor)
+    {
+        GameLocation location = Game1.currentLocation;
+        if (location == null)
+            return false;
+
+        if (button is SButton.MouseLeft or SButton.MouseRight)
         {
-            if (!location.objects.TryGetValue(tile, out var obj))
-                continue;
-            if (obj is Sign sign && sign.displayItem.Value != null)
+            if (IsLockedSignTargetAt(location, cursor.GrabTile))
                 return true;
+            return IsLockedSignTargetAt(location, GetToolTile(cursor));
         }
 
-        return false;
+        return IsLockedSignTargetAt(location, GetPrimaryTargetTile(button, cursor));
+    }
+
+    private static Vector2 GetPrimaryTargetTile(SButton button, ICursorPosition cursor)
+    {
+        if (button is SButton.MouseLeft or SButton.MouseRight || button.TryGetKeyboard(out _))
+        {
+            if (button.IsUseToolButton())
+                return GetToolTile(cursor);
+            return cursor.GrabTile;
+        }
+
+        if (button.IsUseToolButton())
+            return GetToolTile();
+
+        return Game1.player.GetGrabTile();
+    }
+
+    private static Vector2 GetToolTile(ICursorPosition? cursor = null)
+    {
+        Vector2 pos = cursor != null
+            ? Game1.player.GetToolLocation(cursor.AbsolutePixels)
+            : Game1.player.GetToolLocation();
+        return new Vector2((int)(pos.X / Game1.tileSize), (int)(pos.Y / Game1.tileSize));
+    }
+
+    private static bool TileHasOtherOccupant(GameLocation location, Vector2 tile)
+    {
+        if (location.isCharacterAtTile(tile) != null)
+            return true;
+
+        if (!location.objects.TryGetValue(tile, out var obj))
+            return false;
+
+        return !IsLockedSign(obj);
+    }
+
+    private static bool IsLockedSignTargetAt(GameLocation location, Vector2 tile)
+    {
+        if (TileHasOtherOccupant(location, tile))
+            return false;
+
+        if (location.objects.TryGetValue(tile, out var obj))
+            return IsLockedSign(obj);
+
+        if (location.objects.TryGetValue(tile + new Vector2(0, 1), out var below) && IsLockedSign(below))
+            return true;
+
+        return location.objects.TryGetValue(tile + new Vector2(0, -1), out var above) && IsLockedSign(above);
+    }
+
+    private static bool IsLockedSign(StardewValley.Object obj)
+    {
+        return obj is Sign sign && sign.displayItem.Value != null;
     }
 
     private IEnumerable<SButton> GetHeldInteractionButtons()
     {
-        // keyboard
+        // mouse
         if (Helper.Input.IsDown(SButton.MouseLeft) || Helper.Input.IsSuppressed(SButton.MouseLeft))
             yield return SButton.MouseLeft;
         if (Helper.Input.IsDown(SButton.MouseRight) || Helper.Input.IsSuppressed(SButton.MouseRight))
