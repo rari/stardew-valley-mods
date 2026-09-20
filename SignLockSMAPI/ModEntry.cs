@@ -19,6 +19,7 @@ internal sealed class ModEntry : Mod
         helper.Events.GameLoop.GameLaunched += OnGameLaunched;
         helper.Events.GameLoop.UpdateTicking += OnUpdateTicking;
         helper.Events.Input.ButtonPressed += OnButtonPressed;
+        helper.Events.Input.ButtonReleased += OnButtonReleased;
         helper.Events.Input.CursorMoved += OnCursorMoved;
     }
 
@@ -53,7 +54,17 @@ internal sealed class ModEntry : Mod
         Helper.Input.Suppress(e.Button);
     }
 
-    // mouse
+    private void OnButtonReleased(object? sender, ButtonReleasedEventArgs e)
+    {
+        ICursorPosition cursor = Helper.Input.GetCursorPosition();
+        if (!ShouldHandleButton(e.Button, cursor))
+            return;
+        if (!IsLockedSignUnderCursor(e.Button, cursor))
+            return;
+
+        Helper.Input.Suppress(e.Button);
+    }
+
     private void OnCursorMoved(object? sender, CursorMovedEventArgs e)
     {
         SuppressHeldButtonsOverLockedSign(e.NewPosition);
@@ -71,14 +82,14 @@ internal sealed class ModEntry : Mod
 
     private void SuppressHeldButtonsOverLockedSign(ICursorPosition cursor)
     {
-        if (!Context.IsPlayerFree || Config.BypassKey.IsDown())
-            return;
-        if (!IsLockedSignUnderCursor(cursor))
+        if (Config.BypassKey.IsDown())
             return;
 
         foreach (SButton button in GetHeldInteractionButtons())
         {
-            if (!ShouldHandleButton(button))
+            if (!ShouldHandleButton(button, cursor))
+                continue;
+            if (!IsLockedSignUnderCursor(button, cursor))
                 continue;
 
             Helper.Input.Suppress(button);
@@ -116,18 +127,6 @@ internal sealed class ModEntry : Mod
         }
 
         return false;
-    }
-
-    private static bool IsLockedSignUnderCursor(ICursorPosition cursor)
-    {
-        GameLocation location = Game1.currentLocation;
-        if (location == null)
-            return false;
-
-        if (IsLockedSignTargetAt(location, cursor.GrabTile))
-            return true;
-
-        return IsLockedSignTargetAt(location, GetToolTile(cursor));
     }
 
     private static bool IsLockedSignUnderCursor(SButton button, ICursorPosition cursor)
@@ -199,29 +198,29 @@ internal sealed class ModEntry : Mod
         return obj is Sign sign && sign.displayItem.Value != null;
     }
 
-    private IEnumerable<SButton> GetHeldInteractionButtons()
+    private bool IsDownOrSuppressed(SButton button)
     {
-        // mouse
-        if (Helper.Input.IsDown(SButton.MouseLeft) || Helper.Input.IsSuppressed(SButton.MouseLeft))
-            yield return SButton.MouseLeft;
-        if (Helper.Input.IsDown(SButton.MouseRight) || Helper.Input.IsSuppressed(SButton.MouseRight))
-            yield return SButton.MouseRight;
-        // controller
-        if (Helper.Input.IsDown(SButton.ControllerA) || Helper.Input.IsSuppressed(SButton.ControllerA))
-            yield return SButton.ControllerA;
-        if (Helper.Input.IsDown(SButton.ControllerX) || Helper.Input.IsSuppressed(SButton.ControllerX))
-            yield return SButton.ControllerX;
+        return Helper.Input.IsDown(button) || Helper.Input.IsSuppressed(button);
+    }
+
+    private static IEnumerable<SButton> InteractionButtons()
+    {
+        yield return SButton.MouseLeft;
+        yield return SButton.MouseRight;
+        yield return SButton.ControllerA;
+        yield return SButton.ControllerX;
 
         foreach (var input in Game1.options.actionButton)
-        {
-            SButton button = input.ToSButton();
-            if (Helper.Input.IsDown(button) || Helper.Input.IsSuppressed(button))
-                yield return button;
-        }
+            yield return input.ToSButton();
         foreach (var input in Game1.options.useToolButton)
+            yield return input.ToSButton();
+    }
+
+    private IEnumerable<SButton> GetHeldInteractionButtons()
+    {
+        foreach (SButton button in InteractionButtons())
         {
-            SButton button = input.ToSButton();
-            if (Helper.Input.IsDown(button) || Helper.Input.IsSuppressed(button))
+            if (IsDownOrSuppressed(button))
                 yield return button;
         }
     }
