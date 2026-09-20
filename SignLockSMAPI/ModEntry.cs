@@ -147,6 +147,9 @@ internal sealed class ModEntry : Mod
         if (location.isCharacterAtTile(tile) != null)
             return true;
 
+        if (location.GetFurnitureAt(tile) != null)
+            return true;
+
         if (!location.objects.TryGetValue(tile, out var obj))
             return false;
 
@@ -201,6 +204,9 @@ internal sealed class ModEntry : Mod
 
     private static bool IsLockedSignUnderCursor(SButton button, ICursorPosition cursor)
     {
+        if (Game1.player == null)
+            return false;
+
         GameLocation location = Game1.currentLocation;
         if (location == null)
             return false;
