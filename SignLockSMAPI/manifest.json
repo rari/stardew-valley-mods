@@ -2,7 +2,7 @@
   "Name": "Sign Lock",
   "Author": "JennaJuffuffles",
   "Version": "%ProjectVersion%",
-  "Description": "Add a safety lock to your signs. Never accidentally update a sign again!",
+  "Description": "Add a safety lock to your signs to prevent accidental updates.",
   "UniqueID": "JennaJuffuffles.SignLock",
   "EntryDll": "SignLockSMAPI.dll",
   "MinimumApiVersion": "4.0.0",
