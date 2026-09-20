@@ -104,11 +104,11 @@ internal sealed class ModEntry : Mod
             return false;
         if (button.IsUseToolButton() && Game1.player?.CurrentTool != null)
             return false;
+        if (IsCursorOverHud())
+            return false;
         if (cursor != null && IsLockedSignUnderCursor(button, cursor))
             return true;
         if (!Context.IsPlayerFree)
-            return false;
-        if (IsCursorOverHud())
             return false;
         return true;
     }
