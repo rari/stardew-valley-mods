@@ -17,7 +17,7 @@ internal sealed class ModEntry : Mod
         Config = helper.ReadConfig<ModConfig>();
 
         helper.Events.GameLoop.GameLaunched += OnGameLaunched;
-        helper.Events.GameLoop.UpdateTicked += OnUpdateTicked;
+        helper.Events.GameLoop.UpdateTicking += OnUpdateTicking;
         helper.Events.Input.ButtonPressed += OnButtonPressed;
         helper.Events.Input.CursorMoved += OnCursorMoved;
     }
@@ -59,9 +59,13 @@ internal sealed class ModEntry : Mod
         SuppressHeldButtonsOverLockedSign(e.NewPosition);
     }
 
-    // controller
-    private void OnUpdateTicked(object? sender, UpdateTickedEventArgs e)
+    private void OnUpdateTicking(object? sender, UpdateTickingEventArgs e)
     {
+        if (Config.BypassKey.IsDown())
+            return;
+        if (!HasHeldInteractionButton())
+            return;
+
         SuppressHeldButtonsOverLockedSign(Helper.Input.GetCursorPosition());
     }
 
@@ -220,5 +224,12 @@ internal sealed class ModEntry : Mod
             if (Helper.Input.IsDown(button) || Helper.Input.IsSuppressed(button))
                 yield return button;
         }
+    }
+
+    private bool HasHeldInteractionButton()
+    {
+        foreach (SButton _ in GetHeldInteractionButtons())
+            return true;
+        return false;
     }
 }
