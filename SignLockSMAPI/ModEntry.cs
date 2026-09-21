@@ -147,13 +147,10 @@ internal sealed class ModEntry : Mod
         if (location.isCharacterAtTile(tile) != null)
             return true;
 
-        if (location.GetFurnitureAt(tile) != null)
-            return true;
+        if (location.objects.TryGetValue(tile, out var obj))
+            return !IsLockedSign(obj);
 
-        if (!location.objects.TryGetValue(tile, out var obj))
-            return false;
-
-        return !IsLockedSign(obj);
+        return location.GetFurnitureAt(tile) != null;
     }
 
     private static bool IsLockedSignTargetAt(GameLocation location, Vector2 tile)

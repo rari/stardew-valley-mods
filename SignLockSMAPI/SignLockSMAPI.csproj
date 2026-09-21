@@ -3,7 +3,7 @@
   <PropertyGroup>
     <GamePath Condition="'$(GamePath)' == ''">$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)\..\..\..\Stardew Valley'))</GamePath>
     <EnableModDeploy>false</EnableModDeploy>
-    <Version>0.0.2</Version>
+    <Version>0.0.3</Version>
     <TargetFramework>net6.0</TargetFramework>
     <Nullable>enable</Nullable>
     <RootNamespace>SignLockSMAPI</RootNamespace>
